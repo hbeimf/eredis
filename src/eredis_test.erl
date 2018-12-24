@@ -9,9 +9,9 @@ start() ->
 	?LOG("start"),
 
 	{ok, C} = eredis:start_link(),
-	SetReply = eredis:q(C, ["SET", "foo", "bar"]),
+	% SetReply = eredis:q(C, ["SET", "foo", "bar"]),
 	GetReply = eredis:q(C, ["GET", "foo"]),
 
-	?LOG({reply, SetReply, GetReply}),
+	?LOG({reply, GetReply}),
 	ok.
 

@@ -23,6 +23,8 @@
 -module(eredis_client).
 -behaviour(gen_server).
 -include("eredis.hrl").
+-include("log.hrl").
+
 
 %% API
 -export([start_link/6, stop/1, select_database/2]).
@@ -92,6 +94,7 @@ init([Host, Port, Database, Password, ReconnectSleep, ConnectTimeout]) ->
     end.
 
 handle_call({request, Req}, From, State) ->
+    ?LOG({handle_call, Req, From}),
     do_request(Req, From, State);
 
 handle_call({pipeline, Pipeline}, From, State) ->
@@ -128,6 +131,7 @@ handle_cast(_Msg, State) ->
 %% enforce sanity.
 handle_info({tcp, Socket, Bs}, #state{socket = Socket} = State) ->
     ok = inet:setopts(Socket, [{active, once}]),
+    ?LOG({handle_info, Bs}),
     {noreply, handle_response(Bs, State)};
 
 handle_info({tcp, Socket, _}, #state{socket = OurSocket} = State)
@@ -193,9 +197,11 @@ do_request(_Req, _From, #state{socket = undefined} = State) ->
     {reply, {error, no_connection}, State};
 
 do_request(Req, From, State) ->
+    ?LOG({do_request, Req}),
     case gen_tcp:send(State#state.socket, Req) of
         ok ->
             NewQueue = queue:in({1, From}, State#state.queue),
+            ?LOG({reply_here, From, State#state.queue, NewQueue}),
             {noreply, State#state{queue = NewQueue}};
         {error, Reason} ->
             {reply, {error, Reason}, State}
@@ -250,8 +256,10 @@ handle_response(Data, #state{parser_state = ParserState,
 %% pipelined request, push the reply to the the head of the queue and
 %% wait for another reply from redis.
 reply(Value, Queue) ->
+    ?LOG({reply, Value, Queue}),
     case queue:out(Queue) of
         {{value, {1, From}}, NewQueue} ->
+            ?LOG({reply, From, Value}),
             safe_reply(From, Value),
             NewQueue;
         {{value, {1, From, Replies}}, NewQueue} ->
@@ -285,8 +293,10 @@ receipient({_, From, _}) ->
 safe_reply(undefined, _Value) ->
     ok;
 safe_reply(Pid, Value) when is_pid(Pid) ->
+    ?LOG({safe_reply, Pid, Value}),
     safe_send(Pid, {response, Value});
 safe_reply(From, Value) ->
+    ?LOG({safe_reply, From, Value}),
     gen_server:reply(From, Value).
 
 safe_send(Pid, Value) ->

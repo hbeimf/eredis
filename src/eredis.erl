@@ -8,6 +8,8 @@
 
 -module(eredis).
 -include("eredis.hrl").
+-include("log.hrl").
+
 
 %% Default timeout for calls to the client gen_server
 %% Specified in http://www.erlang.org/doc/man/gen_server.html#call-3
@@ -122,7 +124,10 @@ q_async(Client, Command, Pid) when is_pid(Pid) ->
 
 call(Client, Command, Timeout) ->
     Request = {request, create_multibulk(Command)},
-    gen_server:call(Client, Request, Timeout).
+    ?LOG({call, self(), Command, Request}),
+    R = gen_server:call(Client, Request, Timeout),
+    ?LOG({r, R}),
+    R.
 
 pipeline(_Client, [], _Timeout) ->
     [];
