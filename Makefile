@@ -31,5 +31,5 @@ endif
 Emakefile: Emakefile.src
 	sed "s/{{EXTRA_OPTS}}/$(EXTRA_OPTS)/" $< > $@
 
-run:
+run: compile
 	erl -pa ./ebin -s eredis_test start
