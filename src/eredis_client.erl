@@ -306,6 +306,9 @@ safe_send(Pid, Value) ->
             error_logger:info_msg("eredis: Failed to send message to ~p with reason ~p~n", [Pid, {Err, Reason}])
     end.
 
+
+
+% tcp client
 %% @doc: Helper for connecting to Redis, authenticating and selecting
 %% the correct database. These commands are synchronous and if Redis
 %% returns something we don't expect, we crash. Returns {ok, State} or
